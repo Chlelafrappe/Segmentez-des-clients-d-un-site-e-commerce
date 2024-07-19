@@ -16,16 +16,81 @@ Nombre de lignes : 444
 
 2 - Qui sont les vendeurs ayant généré un chiffre d'affaires de plus de 100 000 Real sur des commandes livrées via Olist ?
 
+SELECT
+    seller_id,
+    SUM(price + freight_value) as ca_total
+FROM
+    order_items
+GROUP BY 
+    seller_id
+HAVING 
+    ca_total > 100000;
 
-Nombre de lignes :
+Nombre de lignes : 19
 
 3 - Qui sont les nouveaux vendeurs (moins de 3 mois d'ancienneté) qui sont déjà très engagés avec la plateforme (ayant déjà vendu plus de 30 produits) ?
 
+SELECT 
+    premiere.seller_id,
+    premiere.first_order_date,
+    COUNT(order_items.order_item_id) AS total_products_sold,
+    CAST(JULIANDAY(dernier_vendeur.max_order_date) - JULIANDAY(premiere.first_order_date) AS INTEGER) AS active_days
+FROM 
+    (
+        SELECT 
+            seller_id,
+            MIN(shipping_limit_date) AS first_order_date
+        FROM 
+            order_items
+        GROUP BY 
+            seller_id
+    ) AS premiere
+JOIN 
+    order_items ON premiere.seller_id = order_items.seller_id
+JOIN 
+    (
+        SELECT 
+            MAX(first_order_date) AS max_order_date
+        FROM 
+            (
+                SELECT 
+                    seller_id,
+                    MIN(shipping_limit_date) AS first_order_date
+                FROM 
+                    order_items
+                GROUP BY 
+                    seller_id
+            )
+    ) AS dernier_vendeur
+WHERE 
+    premiere.first_order_date >= DATE(dernier_vendeur.max_order_date, '-3 months')
+GROUP BY 
+    premiere.seller_id, premiere.first_order_date
+HAVING 
+    COUNT(order_items.order_item_id) > 30;
 
-
-Nombre de lignes : 
+Nombre de lignes : 10
 
 4 - Question : Quels sont les 5 codes postaux, enregistrant plus de 30 reviews, avec le pire review score moyen sur les 12 derniers mois ?
 
+SELECT 
+    sellers.seller_zip_code_prefix AS cp,
+    COUNT(order_items.order_id) AS total_commande,
+    AVG(CAST(order_reviews.review_score AS FLOAT)) AS score_moyen
+FROM 
+    order_items
+INNER JOIN 
+    sellers ON order_items.seller_id = sellers.seller_id
+INNER JOIN
+    order_reviews ON order_items.order_id = order_reviews.order_id
+WHERE 
+    order_reviews.review_creation_date >= DATE((SELECT MAX(review_creation_date) FROM order_reviews), '-12 months')
+GROUP BY 
+    sellers.seller_zip_code_prefix
+HAVING 
+    COUNT(order_items.order_id) > 30
+ORDER BY 
+    score_moyen
+LIMIT 5;
 
-Nombre de lignes : 
+Nombre de lignes : 5

@@ -1,0 +1,31 @@
+Les requêtes SQL à intégrer dans le Dashboard :
+
+1 - En excluant les commandes annulées, quelles sont les commandes récentes de moins de 3 mois que les clients ont reçues avec au moins 3 jours de retard ?
+
+SELECT *
+FROM orders
+WHERE order_status != 'canceled'
+AND order_purchase_timestamp >= (
+    SELECT DATE(MAX(order_purchase_timestamp), '-90 day')
+    FROM orders
+    WHERE order_status != 'canceled'
+)
+AND julianday(order_delivered_customer_date) - julianday(order_estimated_delivery_date) > 3; 
+
+Nombre de lignes : 444 
+
+2 - Qui sont les vendeurs ayant généré un chiffre d'affaires de plus de 100 000 Real sur des commandes livrées via Olist ?
+
+
+Nombre de lignes :
+
+3 - Qui sont les nouveaux vendeurs (moins de 3 mois d'ancienneté) qui sont déjà très engagés avec la plateforme (ayant déjà vendu plus de 30 produits) ?
+
+
+
+Nombre de lignes : 
+
+4 - Question : Quels sont les 5 codes postaux, enregistrant plus de 30 reviews, avec le pire review score moyen sur les 12 derniers mois ?
+
+
+Nombre de lignes : 
